@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Local Discovery Chatbot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="chat-wrapper">
+    <div class="chat-header">
+      <h1>Local Discovery Assistant</h1>
+    </div>
+    <div id="chat-box" class="chat-box"></div>
+    <div class="chat-input-area">
+      <input
+        type="text"
+        id="user-input"
+        placeholder="Ask about local services..."
+        autocomplete="off"
+      />
+      <button id="send-btn" aria-label="Send message">➤</button>
+    </div>
+  </div>
+
+  <script>
+    const chatBox = document.getElementById("chat-box");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+
+    function addMessage(sender, message) {
+      const wrap = document.createElement("div");
+      wrap.className = sender === "You" ? "message user" : "message bot";
+      wrap.innerHTML = `
+        <div class="bubble">
+          <span class="sender">${sender}</span>
+          <p class="text">${message}</p>
+        </div>`;
+      chatBox.appendChild(wrap);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const query = userInput.value.trim();
+      if (!query) return;
+      addMessage("You", query);
+      userInput.value = "";
+      try {
+        const res = await fetch("/query", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({query})
+        });
+        const data = await res.json();
+        addMessage("Bot", data.response.replace(/\n/g, "<br>"));
+      } catch {
+        addMessage("Bot", "Sorry, I'm having trouble. Please try again.");
+      }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    userInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    // Kick things off
+    addMessage("Bot", "Hi! I can help you discover local services. Try asking: <i>Find vegetarian restaurants near MG Road, Bengaluru</i>");
+  </script>
+</body>
+</html>
